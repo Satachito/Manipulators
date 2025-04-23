@@ -1,8 +1,3 @@
-import {
-	tools
-,	functions
-} from './Playwright.js'
-
 import OpenAI from 'openai'
 
 const
@@ -15,7 +10,7 @@ const
 Push = ( _, $ ) => ( _.push( $ ), $ )
 
 const
-Message = async () => Push(
+Message = async functions => Push(
 	messages
 ,	(	await openai.chat.completions.create({
 			model			: `gpt-4.1-nano`
@@ -26,8 +21,8 @@ Message = async () => Push(
 	)[ `choices` ][ 0 ].message
 )
 
-export default
-async content => {
+export default 
+async ( content, functions, tools ) => {
 
 	messages.push({
 		role	: `user`
@@ -35,7 +30,7 @@ async content => {
 	})
 
 	let
-	message = await Message()
+	message = await Message( functions )
 
 	while( message.function_call ) {
 
@@ -43,18 +38,18 @@ async content => {
 		funCall = message.function_call
 
 		const
- 		Call = async () => {
- 			try {
- 			//	console.info( '>', funCall.name, funCall.arguments )
- 				const
- 				$ = JSON.stringify( await tools[ funCall.name ].func( JSON.parse( funCall.arguments ) ) )
- 			//	console.info( '<', $ )
- 				return $
- 			} catch ( e ) {
+		Call = async () => {
+			try {
+			//	console.info( '>', funCall.name, funCall.arguments )
+				const
+				$ = JSON.stringify( await tools[ funCall.name ].func( JSON.parse( funCall.arguments ) ) )
+			//	console.info( '<', $ )
+				return $
+			} catch ( e ) {
 			//	console.error( e )
- 				return e.message
- 			}
- 		}
+				return e.message
+			}
+		}
 
 		messages.push(
 			{	role	: `function`
@@ -62,8 +57,7 @@ async content => {
 			,	content	: await Call()
 			}
 		)
-		message = await Message()
+		message = await Message( functions )
 	}
 	return message.content
 }
-

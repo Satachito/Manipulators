@@ -4,5 +4,5 @@ export PASSWORD='ve8ra2nO8'
 
 
 
-# NODE_NO_WARNINGS=1 node --inspect-brk CLI.js
-NODE_NO_WARNINGS=1 node CLI.js
+# NODE_NO_WARNINGS=1 node --inspect-brk REPL.js
+NODE_NO_WARNINGS=1 node REPL.js

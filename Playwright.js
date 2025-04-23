@@ -13,7 +13,7 @@ context = await chromium.launchPersistentContext(
 	}
 )
 
-const
+export const
 tools = {
 	navigate		: {
 		func		: async ({ url, pageIndex = 0 }) => {
@@ -183,7 +183,7 @@ tools = {
 	}
 }
 
-const
+export const
 functions = Object.entries( tools ).map(
 	( [ K, V ] ) => ({
 		name		: K
@@ -192,103 +192,15 @@ functions = Object.entries( tools ).map(
 	})
 )
 
-import OpenAI from 'openai'
-
-const
-openai = new OpenAI()
-
-const
-messages = []
-
-const
-Push = ( _, $ ) => ( _.push( $ ), $ )
-
-const
-Message = async () => Push(
-	messages
-,	(	await openai.chat.completions.create({
-			model			: `gpt-4.1-nano`
-		,	function_call	: `auto`
-		,	functions
-		,	messages
-		})
-	)[ `choices` ][ 0 ].message
-)
-
-const
-Loop = async content => {
-
-	messages.push({
-		role	: `user`
-	,	content
-	})
-
-	let
-	message = await Message()
-
-	while( message.function_call ) {
-
-		const
-		funCall = message.function_call
-
-		const
- 		Call = async () => {
- 			try {
- 			//	console.info( '>', funCall.name, funCall.arguments )
- 				const
- 				$ = JSON.stringify( await tools[ funCall.name ].func( JSON.parse( funCall.arguments ) ) )
- 			//	console.info( '<', $ )
- 				return $
- 			} catch ( e ) {
-			//	console.error( e )
- 				return e.message
- 			}
- 		}
-
-		messages.push(
-			{	role	: `function`
-			,	name	: funCall.name
-			,	content	: await Call()
-			}
-		)
-		message = await Message()
-	}
-	console.log( ':', message.content )
-}
-
-import readline from 'readline'
-
-const
-rl = readline.createInterface(
-	{	input	: process.stdin
-	,	output	: process.stdout
-	,	prompt	: `-------- vvvvvvvv (blank line to submit)\n`
-	}
-)
-rl.prompt()
-
-const
-contents = []
-
-rl.on(
-	`line`
-,	async _ => _ === ''
-	?	contents.length && (
-			await Loop( contents.join( '\n' ) )
-		,	contents.length = 0
-		,	rl.prompt()
-		)
-	:	contents.push( _.trim() )
-).on(
-	`close`
-,	() => process.exit( 0 )
-)
-
 process.on(
 	'exit'
-,	async () => (
-		context.pages().forEach( async _ => await _.close() )
-	,	await context.close()
-	)
+,	async () => {
+		try {
+			await Promise.all( context.pages().map( _ => _.close() ) )
+			await context.close()
+		} catch ( e ) {
+			console.error( e )
+		}
+	}
 )
 

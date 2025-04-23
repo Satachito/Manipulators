@@ -14,7 +14,7 @@ context = await chromium.launchPersistentContext(
 )
 
 const
-$ = {
+tools = {
 	navigate		: {
 		func		: async ({ url, pageIndex = 0 }) => {
 			const
@@ -129,7 +129,7 @@ $ = {
 			,	locatorIndex	: { type: `number` }
 			,	pageIndex		: { type: `number` }
 			}
-		,	required	: [ `label`, `locator` ]
+		,	required	: [ `index`, `locator` ]
 		}
 	}
 
@@ -144,13 +144,12 @@ $ = {
 			,	locatorIndex	: { type: `number` }
 			,	pageIndex		: { type: `number` }
 			}
-		,	required	: [ `text`, `locator` ]
+		,	required	: [ `locator` ]
 		}
 	}
 
 ,	pageIndex	: {
 		func		: ({ url }) => {
-console.info( '> pageIndex:', url )
 			const
 			$ = context.pages().findIndex( _ => _.url().startsWith( url ) )
 			return $ < 0
@@ -168,7 +167,6 @@ console.info( '> pageIndex:', url )
 
 ,	unlockMetamask	: {
 		func		: async ({}) => {
-console.info( '> unlockMetamask:' )
 			const
 			metamask = context.pages().find(
 				_ => _.url() === 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#unlock'
@@ -186,7 +184,7 @@ console.info( '> unlockMetamask:' )
 }
 
 const
-functions = Object.entries( $ ).map(
+functions = Object.entries( tools ).map(
 	( [ K, V ] ) => ({
 		name		: K
 	,	description	: V.description
@@ -234,13 +232,18 @@ Loop = async content => {
 		funCall = message.function_call
 
 		const
-		Call = async () => {
-			try {
-				return JSON.stringify( await $[ funCall.name ].func( JSON.parse( funCall.arguments ) ) )
-			} catch ( e ) {
-				return e.message
-			}
-		}
+ 		Call = async () => {
+ 			try {
+ 			//	console.info( '>', funCall.name, funCall.arguments )
+ 				const
+ 				$ = JSON.stringify( await tools[ funCall.name ].func( JSON.parse( funCall.arguments ) ) )
+ 			//	console.info( '<', $ )
+ 				return $
+ 			} catch ( e ) {
+			//	console.error( e )
+ 				return e.message
+ 			}
+ 		}
 
 		messages.push(
 			{	role	: `function`
@@ -252,8 +255,6 @@ Loop = async content => {
 	}
 	console.log( ':', message.content )
 }
-
-//	Loop( 'https://app.tealswap.com/en/swap/ に遷移して' )
 
 import readline from 'readline'
 
@@ -285,5 +286,9 @@ rl.on(
 
 process.on(
 	'exit'
-,	async () => await context.close()
+,	async () => (
+		context.pages().forEach( async _ => await _.close() )
+	,	await context.close()
+	)
 )
+

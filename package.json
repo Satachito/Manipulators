@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "openai": "^4.95.1",
+    "playwright": "^1.52.0",
+    "tiktoken": "^1.0.20"
+  },
+  "type": "module"
+}

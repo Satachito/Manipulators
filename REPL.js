@@ -3,7 +3,7 @@ import {
 ,	functions
 } from './Playwright.js'
 
-import REPL from './OpenAI.js'
+import Completion from './OpenAI.js'
 
 import readline from 'readline'
 
@@ -23,7 +23,7 @@ rl.on(
 	`line`
 ,	async _ => _ === ''
 	?	contents.length && (
-			console.log( ':', await REPL( contents.join( '\n' ), functions, tools ) )
+			console.log( ':', await Completion( contents.join( '\n' ), functions, tools ) )
 		,	contents.length = 0
 		,	rl.prompt()
 		)

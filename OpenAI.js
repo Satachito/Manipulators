@@ -10,27 +10,28 @@ const
 Push = ( _, $ ) => ( _.push( $ ), $ )
 
 const
-Message = async functions => Push(
+Complete = async functions => Push(
 	messages
-,	(	await openai.chat.completions.create({
-			model			: `gpt-4.1-nano`
+,	await openai.chat.completions.create(
+		{	model			: `gpt-4.1-nano`
 		,	function_call	: `auto`
 		,	functions
 		,	messages
-		})
+		}
 	)[ `choices` ][ 0 ].message
 )
 
 export default 
 async ( content, functions, tools ) => {
 
-	messages.push({
-		role	: `user`
-	,	content
-	})
+	messages.push(
+		{	role	: `user`
+		,	content
+		}
+	)
 
 	let
-	message = await Message( functions )
+	message = await Complete( functions )
 
 	while( message.function_call ) {
 
@@ -57,7 +58,7 @@ async ( content, functions, tools ) => {
 			,	content	: await Call()
 			}
 		)
-		message = await Message( functions )
+		message = await Complete( functions )
 	}
 	return message.content
 }

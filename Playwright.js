@@ -3,20 +3,27 @@ import {
 } from 'playwright'
 
 const
-context = await chromium.launchPersistentContext(
-	process.env.PERSISTENT_CONTENT_PATH
-,	{	headless	: false
-	,	args		: [
-			`--disable-extensions-except=${process.env.EXTENSION_PATH}`
-		,	`--load-extension=${process.env.EXTENSION_PATH}`
-		]
-	}
-)
+context = process.env.EXTENSION_PATH
+?	await chromium.launchPersistentContext(
+		process.env.PERSISTENT_CONTENT_PATH
+	,	{	headless	: false
+		,	args		: [
+				`--load-extension=${process.env.EXTENSION_PATH}`
+			,	`--disable-extensions-except=${process.env.EXTENSION_PATH}`
+			]
+		}
+	)
+:	await chromium.launchPersistentContext(
+		process.env.PERSISTENT_CONTENT_PATH
+	,	{	headless	: false
+		}
+	)
 
 export const
 tools = {
 	navigate		: {
-		func		: async ({ url, pageIndex = 0 }) => {
+		description	: 'Navigate the browser to the specified URL.'
+	,	func		: async ({ url, pageIndex = 0 }) => {
 			const
 			mainPage = context.pages()[ pageIndex ]
 			await mainPage.bringToFront()
@@ -34,7 +41,8 @@ tools = {
 	}
 
 ,	click			: {
-		func		: async ({ locator, locatorIndex = 0, pageIndex = 0 }) => (
+		description	: 'Click on an element located by the selector.'
+	,	func		: async ({ locator, locatorIndex = 0, pageIndex = 0 }) => (
 			await context.pages()[ pageIndex ].locator( locator ).nth( locatorIndex ).click()
 		,	`Clicked on element with locator: ${locator}`
 		)
@@ -50,7 +58,8 @@ tools = {
 	}
 
 ,	check			: {
-		func		: async ({ locator, locatorIndex = 0, pageIndex = 0 }) => (
+		description	: 'Check a checkbox or similar element.'
+	,	func		: async ({ locator, locatorIndex = 0, pageIndex = 0 }) => (
 			await context.pages()[ pageIndex ].locator( locator ).nth( locatorIndex ).check()
 		,	`Clicked on element with locator: ${locator}`
 		)
@@ -66,7 +75,8 @@ tools = {
 	}
 
 ,	fill			: {
-		func		: async ({ text, locator, locatorIndex = 0, pageIndex = 0 }) => (
+		description	: 'Fill text into an input field.'
+	,	func		: async ({ text, locator, locatorIndex = 0, pageIndex = 0 }) => (
 			await context.pages()[ pageIndex ].locator( locator ).nth( locatorIndex ).fill( text )
 		,	`Filled '${text}' into element with locator: ${locator}`
 		)
@@ -83,7 +93,8 @@ tools = {
 	}
 
 ,	selectValue		: {
-		func		: async ({ value, locator, locatorIndex = 0, pageIndex = 0 }) => (
+		description	: 'Select an option by value attribute.'
+	,	func		: async ({ value, locator, locatorIndex = 0, pageIndex = 0 }) => (
 			await context.pages()[ pageIndex ].locator( locator ).nth( locatorIndex ).selectOption( { value } )
 		,	`Selected '${value}' on element with locator: ${locator}`
 		)
@@ -100,7 +111,8 @@ tools = {
 	}
 
 ,	selectLabel		: {
-		func		: async ({ label, locator, locatorIndex = 0, pageIndex = 0 }) => (
+		description	: 'Select an option by visible label.'
+	,	func		: async ({ label, locator, locatorIndex = 0, pageIndex = 0 }) => (
 			await context.pages()[ pageIndex ].locator( locator ).nth( locatorIndex ).selectOption( { label } )
 		,	`Selected '${label}' on element with locator: ${locator}`
 		)
@@ -117,7 +129,8 @@ tools = {
 	}
 
 ,	selectIndex		: {
-		func		: async ({ index, locator, locatorIndex = 0, pageIndex = 0 }) => (
+		description	: 'Select an option by index.'
+	,	func		: async ({ index, locator, locatorIndex = 0, pageIndex = 0 }) => (
 			await context.pages()[ pageIndex ].locator( locator ).nth( locatorIndex ).selectOption( { index } )
 		,	`Selected '${index}' on element with locator: ${locator}`
 		)
@@ -134,7 +147,8 @@ tools = {
 	}
 
 ,	html			: {
-		func		: async ({ locator, locatorIndex = 0, pageIndex = 0 }) => {
+		description	: 'Get inner HTML of the specified element.'
+	,	func		: async ({ locator, locatorIndex = 0, pageIndex = 0 }) => {
 			return await context.pages()[ pageIndex ].locator( locator ).nth( locatorIndex ).innerHTML()
 		}
 	,	parameters	: {
@@ -148,8 +162,9 @@ tools = {
 		}
 	}
 
-,	pageIndex	: {
-		func		: ({ url }) => {
+,	pageIndex		: {
+		description	: 'Find the index of a page that starts with the given URL.'
+	,	func		: ({ url }) => {
 			const
 			$ = context.pages().findIndex( _ => _.url().startsWith( url ) )
 			return $ < 0
@@ -166,7 +181,8 @@ tools = {
 	}
 
 ,	unlockMetamask	: {
-		func		: async ({}) => {
+		description	: 'Unlock the MetaMask extension using the preset password.'
+	,	func		: async ({}) => {
 			const
 			metamask = context.pages().find(
 				_ => _.url() === 'chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/home.html#unlock'
@@ -185,10 +201,10 @@ tools = {
 
 export const
 functions = Object.entries( tools ).map(
-	( [ K, V ] ) => ({
-		name		: K
-	,	description	: V.description
-	,	parameters	: V.parameters
+	( [ name, { description, parameters } ] ) => ({
+		name
+	,	description
+	,	parameters
 	})
 )
 

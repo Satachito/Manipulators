@@ -7,21 +7,26 @@ const
 messages = []
 
 const
-Push = ( _, $ ) => ( _.push( $ ), $ )
+Push = _ => ( messages.push( _ ), _ )
 
 const
-Complete = async functions => Push(
-	messages
-,	await openai.chat.completions.create(
-		{	model			: `gpt-4.1-nano`
-		,	function_call	: `auto`
-		,	functions
-		,	messages
-		}
-	)[ `choices` ][ 0 ].message
-)
+Complete = async functions => {
+	try {
+		return Push(
+			(	await openai.chat.completions.create({
+					model			: `gpt-4.1-nano`
+				,	function_call	: `auto`
+				,	functions
+				,	messages
+				})
+			).choices[ 0 ].message
+		)
+	} catch ( e ) {
+		return e.message
+	}
+}
 
-export default 
+export default
 async ( content, functions, tools ) => {
 
 	messages.push(
@@ -37,27 +42,23 @@ async ( content, functions, tools ) => {
 
 		const
 		funCall = message.function_call
-
-		const
-		Call = async () => {
-			try {
-			//	console.info( '>', funCall.name, funCall.arguments )
-				const
-				$ = JSON.stringify( await tools[ funCall.name ].func( JSON.parse( funCall.arguments ) ) )
-			//	console.info( '<', $ )
-				return $
-			} catch ( e ) {
-			//	console.error( e )
-				return e.message
-			}
+console.error( 'Calling:', funCall.name )
+		try {
+			messages.push(
+				{	role	: `function`
+				,	name	: funCall.name
+				,	content	: JSON.stringify( await tools[ funCall.name ].func( JSON.parse( funCall.arguments ) ) )
+				}
+			)
+		} catch ( e ) {
+			messages.push(
+				{	role	: `function`
+				,	name	: funCall.name
+				,	content	: JSON.stringify({ success: false, error: e.message })
+				}
+			)
 		}
 
-		messages.push(
-			{	role	: `function`
-			,	name	: funCall.name
-			,	content	: await Call()
-			}
-		)
 		message = await Complete( functions )
 	}
 	return message.content
